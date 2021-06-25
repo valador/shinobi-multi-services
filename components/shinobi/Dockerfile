@@ -5,6 +5,9 @@ FROM node:10-alpine
 
 LABEL Author="JMoore"
 
+ARG SHINOBI_REPOSITORY_URL=https://gitlab.com/Shinobi-Systems/Shinobi.git
+ARG SHINOBI_REPOSITORY_BRANCH=master
+
 # Set environment variables to default values
 ENV ADMIN_USER=admin@shinobi.video \
     ADMIN_PASSWORD=administrator \
@@ -46,7 +49,7 @@ RUN pip3 install --extra-index-url https://google-coral.github.io/py-repo/ tflit
 
 # Clone the Shinobi CCTV PRO repo
 RUN mkdir master_temp
-RUN git clone https://github.com/ShinobiCCTV/Shinobi.git master_temp
+RUN git clone --branch="${SHINOBI_REPOSITORY_BRANCH}" "${SHINOBI_REPOSITORY_URL}" master_temp
 RUN cp -R -f master_temp/* .
 RUN rm -rf $distro master_temp
 
