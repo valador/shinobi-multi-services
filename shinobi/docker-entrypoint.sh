@@ -4,10 +4,6 @@ set -euf -o pipefail
 
 "${DOCKER_SHINOBI_INSTALL_DIRECTORY}/generate-config.py"
 "${DOCKER_SHINOBI_INSTALL_DIRECTORY}/generate-super-config.sh"
-# "${DOCKER_SHINOBI_INSTALL_DIRECTORY}/generate-motion-config.py"
-echo "read /opt/shinobi/conf.json"
-cat /opt/shinobi/conf.json
-cat /opt/shinobi/super.json
 
 export MYSQL_PWD="${MYSQL_ROOT_PASSWORD}"
 host="$(jq -r '.db.host' /opt/shinobi/conf.json)"

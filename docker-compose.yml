@@ -45,6 +45,8 @@ services:
       MOTION_KEY: "${MOTION_KEY:-d4b5feb4-8f9c-4b91-bfec-277c641fc5e3}"
       OPENCV_KEY: "${OPENCV_KEY:-644bb8aa-8066-44b6-955a-073e6a745c74}"
       OPENALPR_KEY: "${OPENALPR_KEY:-9973e390-f6cd-44a4-86d7-954df863cea0}"
+      # MOTION_HOST: "${MOTION_HOST:-localhost}"
+      # MOTION_PORT: "${MOTION_PORT:-8080}"
     depends_on:
       - database
 

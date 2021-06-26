@@ -25,6 +25,16 @@ RUN apk add --update --no-cache ffmpeg \
     ca-certificates
 
 RUN update-ca-certificates
+# # For Canvas
+# RUN apk add --no-cache sudo \
+#         curl \
+#         libpng \
+#         libpng-dev \
+#         pango-dev \
+#         cairo-dev \
+#         cairo \
+#         giflib-dev \
+#         imagemagick
 
 # Install ffmpeg static build version from cdn.shinobi.video
 RUN wget -q https://cdn.shinobi.video/installers/ffmpeg-release-64bit-static.tar.xz \
@@ -62,6 +72,12 @@ RUN apk add --virtual build-deps --no-cache \
   x265-dev \ 
   yasm-dev
 
+# #  add glibc and install canvas
+# RUN wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub && \
+#     wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.33-r0/glibc-2.33-r0.apk && \
+#     apk add glibc-2.33-r0.apk
+#     #npm install canvas@2.5.0
+
 ARG SHINOBI_REPOSITORY_URL=https://gitlab.com/Shinobi-Systems/Shinobi.git
 ARG SHINOBI_REPOSITORY_BRANCH=master
 ARG SHINOBI_REPOSITORY_COMMIT
@@ -72,17 +88,19 @@ RUN git clone --branch="${SHINOBI_REPOSITORY_BRANCH}" "${SHINOBI_REPOSITORY_URL}
            git checkout "${SHINOBI_REPOSITORY_COMMIT}"; \
        fi \
     && npm i npm@latest -g \
+    # && npm i -g node-gyp \
     && npm install pm2 -g \
+    # && npm install canvas@2.7.0 moment --unsafe-perm \
     && npm install \
     && apk del build-deps
 
 COPY generate-config.py "${DOCKER_SHINOBI_INSTALL_DIRECTORY}/"
 COPY generate-super-config.sh "${DOCKER_SHINOBI_INSTALL_DIRECTORY}/"
-COPY generate-motion-config.py "${DOCKER_SHINOBI_INSTALL_DIRECTORY}/"
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN mkdir -p /config
 COPY config.default.json /config/
-COPY pm2Shinobi.yml /config/
+COPY pm2Shinobi.yml "${SHINOBI_INSTALL_DIRECTORY}/"
+
 
 RUN chmod +x \
     /docker-entrypoint.sh \
@@ -94,8 +112,7 @@ EXPOSE 8080
 ENTRYPOINT ["/docker-entrypoint.sh"]
 
 WORKDIR /opt/shinobi
-CMD ["pm2-docker", "/config/pm2Shinobi.yml"]
+CMD ["pm2-docker", "pm2Shinobi.yml"]
 
-# HEALTHCHECK --interval=10m --start-period=30s \
-#     CMD curl -f http://localhost:8080 || exit 1
-
+# # HEALTHCHECK --interval=10m --start-period=30s \
+# #     CMD curl -f http://localhost:8080 || exit 1
