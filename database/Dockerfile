@@ -22,4 +22,5 @@ FROM $BASE_IMAGE
 
 COPY --from=shinobi-downloader /usr/local/src/shinobi/sql/framework.sql /docker-entrypoint-initdb.d
 
+ADD server.cnf /etc/mysql/mariadb.conf.d/50-server.cnf
 

@@ -1,146 +1,69 @@
-# Docker image for Shinobi Pro
-This docker image is designed to run [Shinobi Pro](https://shinobi.video/pro).
-Based on the latest official Node.JS images the build process of the image will clone the current branch of the [Shinobi repository](https://github.com/ShinobiCCTV/Shinobi.git) into the runtime environment. You'll get the current stable Node.JS running the current build of [Shinobi Pro](https://shinobi.video/pro).
+[![Build Status](https://travis-ci.com/colin-nolan/docker-shinobi.svg?branch=master)](https://travis-ci.com/colin-nolan/docker-shinobi)
+# Dockerised Shinobi
+_Dockerised installation of [Shinobi](https://gitlab.com/Shinobi-Systems/Shinobi) (an open-source video management 
+solution)._
 
-Many thanks to [Shinobi Dev Team](https://shinobi.video/pro) for their great work!
 
-Enjoy!
+## Requirements
+- Docker and Docker Compose.
+- Works on Raspberry Pi (with some configuration changes).
 
-## Shinobi Pro 
-Shinobi is the Open Source CCTV Solution written in Node.JS. Designed with multiple account system, Streams by WebSocket, and Save to WebM. Shinobi can record IP Cameras and Local Cameras.
 
-<a href="http://shinobi.video/gallery"><img src="https://github.com/ShinobiCCTV/Shinobi/blob/master/web/libs/img/demo.jpg?raw=true"></a>
+## Setup
+*For an Ansible installation (including user and monitor setup), 
+[please see `colin_nolan.shinobi`](https://github.com/colin-nolan/ansible-shinobi/)*.
 
-## Image flavours
-Right now there are two image flavours based on Debian and Alpine Linux. 
-With the support of SQLite I'll provide a minimal image for home- or SOHO-use in the future to provide you an out-of-the-box ready to use image.
+### Trying it Out
+The instructions below should get a Dockerised Shinobi installation going with minimal effort.
 
-### Debian based image
-This is the default Docker image for Shinobi Pro supporting the following features:
-* Choose your database management system. Right now the image supports MySQL, MariaDB and SQLite.
-* Shinobi takes use of the default Debian ffmpeg package.
-* Well known filesystem structure for scripts, fonts, etc.
+_This setup should _not_ be used in production!_ 
+See [below for production setup suggestions](#Production).
 
-### Alpine Linux based image
-The Alpine Linux based image provides the same features as the default image but the image size is much smaller.
-* Choose your database management system. Right now the image supports MySQL, MariaDB and SQLite.
-* Image includes current static build ffmpeg.
-* Be aware of the different path- and font-names, if you want to use timestamps. You'll find the [alpine ttf-freefonts](https://pkgs.alpinelinux.org/contents?branch=edge&name=ttf-freefont&arch=x86_64&repo=main) in `/usr/share/fonts/TTF/`.
-
-### Minimal image
-The minimal image will only support SQLite as the database management system as the main difference.
-* Based on Alpine Linux using the official Node.JS image.
-* Image includes current static build ffmpeg.
-* Support for timestamps and watermarks.
-
-## Using the image
-### Single-container application
-You may run Shinobi on Docker as a single-container application. In that case youu will have to grant Shinobi access to aan existing database management system like MySQL or MariaDB.
-The `docker cli` is used when managing individual containers on a docker engine. It is the client command line to access the docker daemon api. 
-To start Shinobi just type:
+```bash
+env \
+        SHINOBI_SUPER_USER_EMAIL=example@localhost \
+        SHINOBI_SUPER_USER_PASSWORD=password123 \
+        SHINOBI_SUPER_USER_TOKEN=token123 \
+        MYSQL_ROOT_PASSWORD=password123 \
+        MYSQL_USER_PASSWORD=password123 \
+        SHINOBI_VIDEO_LOCATION="${PWD}/shinobi-data/videos" \
+        SHINOBI_DATA_LOCATION="${PWD}/shinobi-data/database" \
+    docker-compose up
 ```
-$ docker run -it --name shinobicctv \
-    --link mysql_container:db \
-    -p 8080:8080 \
-    -e ...
-    -e ...
-    -v /etc/localtime:/etc/localtime:ro \
-    -v /etc/timezone:/etc/timezone:ro \
-    -v /path/to/videos:/opt/shinobi/videos \
-    migoller/shinobi:latest
-```
+_Note: on a Mac, the above will result in error 
+[due to an issue bind mounting time related files from /etc](https://github.com/docker/for-mac/issues/2396). 
+To quickly get around this, set the environment variables: `SHINOBI_LOCALTIME=/dev/null SHINOBI_TIMEZONE=/dev/null`._
 
-If you want to run the Alpine Linux based image take care to the tag `alpine` instead of `latest`: `migoller/shinobi:alpine`.
+Once the installation is going, [jump into the super user interface (using the credentials defined above) and create a 
+user: http://localhost:8080/super](http://localhost:8080/super).
 
-### Multi-container application
-The `docker-compose cli` can be used to manage a multi-container application. It also moves many of the options you would enter on the `docker run cli` into the `docker-compose.yml` file for easier reuse. See this [documentation on docker-compose](https://docs.docker.com/compose/overview/) for more details.
+You will then be able to [login on the home page](http://localhost:8080) to setup CCTV monitors. 
 
-Declare environment variables in `env-files` for easier reuse.
 
-#### Multi-container application including MySQL server
-This is an example for a file to run Shinobi with a dedicated MySQL server.
-```
-version: '2'
-services:
-  db:
-    image: mysql
-    env_file:
-      - MySQL.env
-    volumes:
-      - ./datadir:/var/lib/mysql
-  web:
-    build: .
-    env_file:
-      - MySQL.env
-      - Shinobi.env
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
-      - ./config:/config
-      - ./videos:/opt/shinobi/videos
-    depends_on:
-      - db
-    ports:
-      - "8080:8080"
-```
+## Production
+_The advice below is given as suggestions only - I take no responsibility for how you setup your software!_
+- I would not recommend exposing any of Shinobi's interfaces to untrusted parties. 
+- Don't set passwords to `password123`...
+- You may be able to build a more optimised version of [ffmpeg](https://www.ffmpeg.org/) for your machine than the one 
+  provided. A custom (Debian-based) base Docker image with `ffmpeg` on the path can be used by setting 
+  the environment variable `BASE_IMAGE_WITH_FFMPEG`.
 
-#### Multi-container application for each Node.JS application including MySQL server 
-This is an example for a file to run Shinobi with a dedicated MySQL server and dedicated containers for each Node.JS application.
-```
-version: '2'
-services:
-  db:
-    image: mysql
-    env_file:
-      - MySQL.env
-    volumes:
-      - ./datadir:/var/lib/mysql
-  camera:
-    build: .
-    env_file:
-      - MySQL.env
-      - Shinobi.env
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
-      - ./config:/config
-      - ./videos:/opt/shinobi/videos
-    depends_on:
-      - db
-    ports:
-      - "8080:8080"
-    command: node /opt/shinobi/camera.js
-  cron:
-    build: .
-    env_file:
-      - MySQL.env
-      - Shinobi.env
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
-      - ./config:/config
-      - ./videos:/opt/shinobi/videos
-    depends_on:
-      - db
-    command: node /opt/shinobi/cron.js
-  motion:
-    build: .
-    env_file:
-      - MySQL.env
-      - Shinobi.env
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
-      - ./config:/config
-      - ./videos:/opt/shinobi/videos
-    depends_on:
-      - db
-    command: node /opt/shinobi/plugins/motion/shinobi-motion.js
-```
 
-### Configure the image by environment variables
+## Raspberry Pi
+The setup will work on a Raspberry Pi with a few configuration adjustments.
+- MariaDB does not have armfh installation - use `DATABASE_BASE_IMAGE=jsurf/rpi-mariadb`.
+- Change Shinobi base image (with `ffmpeg`) to be an image compatible for your RPi's architecture, using 
+  `SHINOBI_BASE_IMAGE`. A [pre-made setup for such an image is available on GitHub](https://github.com/colin-nolan/docker-ffmpeg-rpi).
 
-## HTTPS - SSL encryption for transport security
-There are many different possibilities to introduce encryption depending on your setup. 
 
-I recommend using a reverse proxy in front of your installation using the popular [nginx-proxy](https://github.com/jwilder/nginx-proxy) and [docker-letsencrypt-nginx-proxy-companion](https://github.com/JrCs/docker-letsencrypt-nginx-proxy-companion) containers. Please check the according documentations before using this setup.
+## Related
+- [Ansible Shinobi setup](https://github.com/colin-nolan/ansible-shinobi).
+- [Shinobi Python client](https://github.com/colin-nolan/python-shinobi).
+
+
+## Legal
+[AGPL v3.0](LICENSE). Copyright 2019, 2020, 2021 Colin Nolan.
+
+I am not affiliated to the development of Shinobi project in any way. 
+
+This work is in no way related to the company that I work for.

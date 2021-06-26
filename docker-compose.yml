@@ -1,56 +1,67 @@
-version: '2'
+---
+
+version: "3.2"
+
 services:
-  db:
-    #image: mariadb
+  shinobi:
     build:
-      context: ./components/db
+      context: ./shinobi
       args:
-        BASE_IMAGE: mariadb
-    env_file:
-      - MySQL.env
+        #BASE_IMAGE_WITH_FFMPEG: "${SHINOBI_BASE_IMAGE:-colinnolan/ffmpeg}"
+        SHINOBI_REPOSITORY_URL: "${SHINOBI_REPOSITORY_URL:-https://gitlab.com/Shinobi-Systems/Shinobi.git}"
+        SHINOBI_REPOSITORY_BRANCH: "${SHINOBI_REPOSITORY_BRANCH:-master}"
+        SHINOBI_REPOSITORY_COMMIT: "${SHINOBI_REPOSITORY_COMMIT:-}"
+    #image: shinobi
+    restart: always
     volumes:
-      - db_data:/var/lib/mysql
-
-  camera:
-    build: .
-    env_file:
-      - MySQL.env
-      - Shinobi.env
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
-      - ./config:/config
-      - ./videos:/opt/shinobi/videos
-    depends_on:
-      - db
+      # - type: bind
+      #   source: "${SHINOBI_CONFIG_LOCATION:-./shinobi/config.default.json}"
+      #   target: /mnt/host/conf.json
+      #   read_only: true
+      # - type: bind
+      #   source: "${SHINOBI_VIDEO_LOCATION}"
+      #   target: /opt/shinobi/videos
+      - type: bind
+        source: "${SHINOBI_LOCALTIME:-/etc/localtime}"
+        target: /etc/localtime
+        read_only: true
+      - type: bind
+        source: "${SHINOBI_TIMEZONE:-/etc/timezone}"
+        target: /etc/timezone
+        read_only: true
     ports:
-      - "8080:8080"
-    command: node /opt/shinobi/camera.js
-
-  cron:
-    build: .
-    env_file:
-      - MySQL.env
-      - Shinobi.env
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
-      - ./config:/config
-      - ./videos:/opt/shinobi/videos
+      - "${SHINOBI_HOST_PORT:-8080}:${SHINOBI_CONTAINER_PORT:-8080}"
+    environment:
+      MYSQL_HOST: database
+      MYSQL_PORT: "3306"
+      MYSQL_USER: "${MYSQL_USER_NAME:-shinobi}"
+      MYSQL_PASSWORD: "${MYSQL_USER_PASSWORD:-shpass}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-sqlroot}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-ccio}"
+      SHINOBI_SUPER_USER_EMAIL: "${SHINOBI_SUPER_USER_EMAIL:-qqq@qqq.com}"
+      SHINOBI_SUPER_USER_PASSWORD: "${SHINOBI_SUPER_USER_PASSWORD:-shuser}"
+      SHINOBI_SUPER_USER_TOKEN: "${SHINOBI_SUPER_USER_TOKEN:-}"
     depends_on:
-      - db
-    command: node /opt/shinobi/cron.js
+      - database
 
-  motion:
-    build: .
-    env_file:
-      - MySQL.env
-      - Shinobi.env
+  database:
+    build:
+      context: ./database
+      args:
+        BASE_IMAGE: "${DATABASE_BASE_IMAGE:-mariadb}"
+        SHINOBI_REPOSITORY_URL: "${SHINOBI_REPOSITORY_URL:-https://gitlab.com/Shinobi-Systems/Shinobi.git}"
+        SHINOBI_REPOSITORY_BRANCH: "${SHINOBI_REPOSITORY_BRANCH:-master}"
+        SHINOBI_REPOSITORY_COMMIT: "${SHINOBI_REPOSITORY_COMMIT:-}"
+    #image: shinobi-database
+    restart: always
     volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
-      - ./config:/config
-      - ./videos:/opt/shinobi/videos
-    depends_on:
-      - db
-    command: node /opt/shinobi/plugins/motion/shinobi-motion.js
+      - type: bind
+        source: "${SHINOBI_DATA_LOCATION}"
+        target: /var/lib/mysql
+    expose:
+      - "3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-sqlroot}"
+      MYSQL_USER: "${MYSQL_USER_NAME:-shinobi}"
+      MYSQL_PASSWORD: "${MYSQL_USER_PASSWORD:-shpass}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-ccio}"
