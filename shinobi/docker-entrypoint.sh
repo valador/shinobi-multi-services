@@ -1,9 +1,13 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 set -euf -o pipefail
 
 "${DOCKER_SHINOBI_INSTALL_DIRECTORY}/generate-config.py"
 "${DOCKER_SHINOBI_INSTALL_DIRECTORY}/generate-super-config.sh"
+# "${DOCKER_SHINOBI_INSTALL_DIRECTORY}/generate-motion-config.py"
+echo "read /opt/shinobi/conf.json"
+cat /opt/shinobi/conf.json
+cat /opt/shinobi/super.json
 
 export MYSQL_PWD="${MYSQL_ROOT_PASSWORD}"
 host="$(jq -r '.db.host' /opt/shinobi/conf.json)"
@@ -16,5 +20,7 @@ while ! mysqladmin ping --host="${host}" --port="${port}" --user=root --silent; 
 done
 >&2 echo "Database is ready!"
  
-cd "${SHINOBI_INSTALL_DIRECTORY}"
-node camera.js
+#cd "${SHINOBI_INSTALL_DIRECTORY}"
+# Execute Command
+echo "Starting Shinobi ..."
+exec "$@"

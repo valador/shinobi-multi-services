@@ -38,9 +38,13 @@ services:
       MYSQL_PASSWORD: "${MYSQL_USER_PASSWORD:-shpass}"
       MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-sqlroot}"
       MYSQL_DATABASE: "${MYSQL_DATABASE:-ccio}"
-      SHINOBI_SUPER_USER_EMAIL: "${SHINOBI_SUPER_USER_EMAIL:-qqq@qqq.com}"
-      SHINOBI_SUPER_USER_PASSWORD: "${SHINOBI_SUPER_USER_PASSWORD:-shuser}"
-      SHINOBI_SUPER_USER_TOKEN: "${SHINOBI_SUPER_USER_TOKEN:-}"
+      SHINOBI_SUPER_USER_EMAIL: "${SHINOBI_SUPER_USER_EMAIL:-slayer.rus@gmail.com}"
+      SHINOBI_SUPER_USER_PASSWORD: "${SHINOBI_SUPER_USER_PASSWORD:-shpass}"
+      SHINOBI_SUPER_USER_TOKEN: "${SHINOBI_SUPER_USER_TOKEN:-supertoken}"
+      CRON_KEY: "${CRON_KEY:-73ffd716-16ab-40f4-8c2e-aecbd3bc1d30}"
+      MOTION_KEY: "${MOTION_KEY:-d4b5feb4-8f9c-4b91-bfec-277c641fc5e3}"
+      OPENCV_KEY: "${OPENCV_KEY:-644bb8aa-8066-44b6-955a-073e6a745c74}"
+      OPENALPR_KEY: "${OPENALPR_KEY:-9973e390-f6cd-44a4-86d7-954df863cea0}"
     depends_on:
       - database
 
@@ -54,10 +58,10 @@ services:
         SHINOBI_REPOSITORY_COMMIT: "${SHINOBI_REPOSITORY_COMMIT:-}"
     #image: shinobi-database
     restart: always
-    volumes:
-      - type: bind
-        source: "${SHINOBI_DATA_LOCATION}"
-        target: /var/lib/mysql
+    # volumes:
+    #   - type: bind
+    #     source: "${SHINOBI_DATA_LOCATION}"
+    #     target: /var/lib/mysql
     expose:
       - "3306"
     environment:

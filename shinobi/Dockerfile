@@ -20,15 +20,17 @@ RUN apk add --update --no-cache ffmpeg \
     x264 \
     libssh2 \
     bzip2 \
+    jq \
+    openssl \
     ca-certificates
 
 RUN update-ca-certificates
 
 # Install ffmpeg static build version from cdn.shinobi.video
-RUN wget https://cdn.shinobi.video/installers/ffmpeg-release-64bit-static.tar.xz \
-    && tar xpvf ./ffmpeg-release-64bit-static.tar.xz -C ./ \
+RUN wget -q https://cdn.shinobi.video/installers/ffmpeg-release-64bit-static.tar.xz \
+    && tar xpf ./ffmpeg-release-64bit-static.tar.xz -C ./ \
     && cp -f ./ffmpeg-3.3.4-64bit-static/ff* /usr/bin/ \
-    && chmod +x /usr/bin/ff*
+    && chmod +x /usr/bin/ff* \
     && rm -f ffmpeg-release-64bit-static.tar.xz \
     && rm -rf ./ffmpeg-3.3.4-64bit-static
 
@@ -37,7 +39,7 @@ RUN wget https://cdn.shinobi.video/installers/ffmpeg-release-64bit-static.tar.xz
 # 	&& pip3 install pillow
 
 # Install build dependencies, fetch shinobi, and install
-RUN apk add --virtual .build-dependencies --no-cache \ 
+RUN apk add --virtual build-deps --no-cache \ 
   build-base \ 
   coreutils \ 
   nasm \
@@ -72,13 +74,15 @@ RUN git clone --branch="${SHINOBI_REPOSITORY_BRANCH}" "${SHINOBI_REPOSITORY_URL}
     && npm i npm@latest -g \
     && npm install pm2 -g \
     && npm install \
-    && apk del --virtual .build-dependencies 
+    && apk del build-deps
 
 COPY generate-config.py "${DOCKER_SHINOBI_INSTALL_DIRECTORY}/"
 COPY generate-super-config.sh "${DOCKER_SHINOBI_INSTALL_DIRECTORY}/"
+COPY generate-motion-config.py "${DOCKER_SHINOBI_INSTALL_DIRECTORY}/"
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN mkdir -p /config
 COPY config.default.json /config/
+COPY pm2Shinobi.yml /config/
 
 RUN chmod +x \
     /docker-entrypoint.sh \
@@ -89,7 +93,8 @@ EXPOSE 8080
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 
-#CMD ["pm2-docker", "pm2Shinobi.yml"]
+WORKDIR /opt/shinobi
+CMD ["pm2-docker", "/config/pm2Shinobi.yml"]
 
 # HEALTHCHECK --interval=10m --start-period=30s \
 #     CMD curl -f http://localhost:8080 || exit 1
